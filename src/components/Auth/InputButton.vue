@@ -1,5 +1,5 @@
 <template>
-    <button class="flex justify-center" @click="register" v-bind:disabled="isDisabledButton" style="height: {{ size }};">
+    <button class="flex justify-center" style="user-select: none;">
         <span class="px-2">
             <slot></slot>
         </span>
