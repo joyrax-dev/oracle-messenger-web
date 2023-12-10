@@ -4,6 +4,8 @@
             <p style="font-size: 20px;">Login</p>
             <input class="" type="text" v-model="loginInput" placeholder="Login">
             <input class="" type="password" v-model="passwordInput" placeholder="Password">
+            <input type="checkbox" v-model="isReauth">
+            <label for="checkbox">Reauth</label>
             <button class="flex justify-center" style="user-select: none;" @click="login" v-bind:disabled="isDisabledButton">
                 <span class="px-2">
                     Login
@@ -25,6 +27,7 @@ export default {
         return {
             loginInput: '',
             passwordInput: '',
+            isReauth: true,
             isDisabledButton: false,
             msgRequest: ''
         }
@@ -42,12 +45,24 @@ export default {
                 socket.emit('login', {
                     login: this.loginInput,
                     password: this.passwordInput
-                }, (msg, status) => {
-                    console.log(msg)
+                }, (userId, msg, status) => {
                     this.msgRequest = msg
+
                     if (status === true) {
                         this.$store.commit('SET_AUTHENTICATE', true)
-                        this.$router.push({name: 'HOME'})
+                        this.$store.commit('SET_AUTHENTICATION_USER', userId)
+
+                        if (this.isReauth) {
+                            socket.emit('newReauthToken', this.$store.getters.GET_AUTHENTICATION_USER, (token, msg, status) => {
+                                if (status === true) {
+                                    this.$store.commit('SET_REAUTHENTICATION_TOKEN', token)
+                                    this.$router.push({name: 'HOME'})
+                                }
+                            })
+                        }
+                        else {
+                            this.$router.push({name: 'HOME'})
+                        }
                     }
                     else {
                         this.isDisabledButton = false
