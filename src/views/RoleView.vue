@@ -1,81 +1,58 @@
 <template>
     <div class="flex justify-center items-center h-screen">
         <form class="flex flex-col gap-y-4 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <p style="font-size: 20px;">Login</p>
-            <input class="" type="text" v-model="loginInput" placeholder="Login">
-            <input class="" type="password" v-model="passwordInput" placeholder="Password">
-            <input type="checkbox" v-model="isReauth">
-            <label for="checkbox">Reauth</label>
-            <button class="flex justify-center" style="user-select: none;" @click="login" v-bind:disabled="isDisabledButton">
+            <input class="" type="text" v-model="roleInput" placeholder="Role">
+            <button class="flex justify-center" style="user-select: none;" @click="createRole" v-bind:disabled="isDisabledButton">
                 <span class="px-2">
-                    Login
+                    Create Role
                 </span>
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" :width="20" :height="20" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve"><g><g><g><path d="M490.667,0h-384C94.885,0,85.333,9.551,85.333,21.333v149.333c0,11.782,9.551,21.333,21.333,21.333 c11.782,0,21.333-9.551,21.333-21.333v-128h341.333v426.667H128v-128c0-11.782-9.551-21.333-21.333-21.333 c-11.782,0-21.333,9.551-21.333,21.333v149.333c0,11.782,9.551,21.333,21.333,21.333h384c11.782,0,21.333-9.551,21.333-21.333 V21.333C512,9.551,502.449,0,490.667,0z"/><path d="M198.248,326.251c-8.331,8.331-8.331,21.839,0,30.17c8.331,8.331,21.839,8.331,30.17,0l85.333-85.333 c0.004-0.004,0.006-0.008,0.01-0.011c0.493-0.494,0.96-1.012,1.403-1.552c0.203-0.247,0.379-0.507,0.569-0.761 c0.227-0.303,0.462-0.6,0.673-0.916c0.203-0.304,0.379-0.619,0.565-0.931c0.171-0.286,0.35-0.565,0.508-0.859 c0.17-0.318,0.314-0.644,0.467-0.969c0.145-0.307,0.298-0.609,0.429-0.923c0.13-0.315,0.236-0.637,0.35-0.957 c0.121-0.337,0.25-0.669,0.354-1.013c0.097-0.32,0.168-0.646,0.249-0.969c0.089-0.351,0.187-0.698,0.258-1.055 c0.074-0.375,0.119-0.753,0.173-1.13c0.044-0.311,0.104-0.617,0.135-0.933c0.138-1.4,0.138-2.811,0-4.211 c-0.031-0.315-0.09-0.621-0.135-0.933c-0.054-0.377-0.098-0.756-0.173-1.13c-0.071-0.358-0.169-0.704-0.258-1.055 c-0.081-0.324-0.152-0.649-0.249-0.969c-0.104-0.344-0.233-0.677-0.354-1.013c-0.115-0.32-0.22-0.642-0.35-0.957 c-0.13-0.315-0.284-0.616-0.429-0.923c-0.153-0.324-0.297-0.651-0.467-0.969c-0.158-0.294-0.337-0.573-0.508-0.859 c-0.186-0.312-0.362-0.627-0.565-0.931c-0.211-0.316-0.446-0.612-0.673-0.916c-0.19-0.254-0.366-0.514-0.569-0.761 c-0.443-0.54-0.91-1.059-1.403-1.552c-0.004-0.004-0.006-0.008-0.01-0.011l-85.333-85.333c-8.331-8.331-21.839-8.331-30.17,0 c-8.331,8.331-8.331,21.839,0,30.17l48.915,48.915H21.333C9.551,234.669,0,244.22,0,256.002s9.551,21.333,21.333,21.333h225.83 L198.248,326.251z"/></g></g></g></svg>
             </button>
-            <p>{{ codeRequest }}</p>
+            <p>{{ requestCode }}</p>
+            <p>{{ requestCode }}</p>
         </form>
     </div>
 
 </template>
   
 <script>
-import socket from '../socket'
+import socket from '@/socket'
 
 export default {
-    name: 'LoginView',
+    name: 'RoleView',
     data() {
         return {
-            loginInput: '',
-            passwordInput: '',
-            isReauth: true,
-            isDisabledButton: false,
-            codeRequest: ''
+            roleInput: '',
+            requestCode: '',
+            roleInfo: '',
+            isDisabledButton: false
         }
     },
     methods: {
-        // добавить одноразовый токен для автоматического логина после отключения соединения
-        // котрый будет логинить по useragent что бы устройство и браузер совпадали
-        login() {
+        createRole() {
             if (this.isDisabledButton) return
-            this.codeRequest = ''
 
             this.isDisabledButton = true
+            this.roleInfo = ''
 
-            if (this.loginInput.trim() !== '' && this.passwordInput.trim() !== '') {
-                socket.emit('login', {
-                    login: this.loginInput,
-                    password: this.passwordInput,
-                    userAgent: navigator.userAgent,
-                    isNextReLogin: this.isReauth
-                }, (data, code, status) => {
-                    const { userId, token, isNextReLogin } = data
-                    this.codeRequest = code
-                    console.log(data)
+            if (this.roleInput.trim() !== '') {
+                socket.emit('createRole', { name: this.roleInput.trim() }, (data, code, status) => {
+                    this.requestCode = code
+                    
                     if (status === true) {
-                        this.$store.commit('SET_AUTHENTICATE', true)
-                        this.$store.commit('SET_AUTHENTICATION_USER', userId)
-
-                        if (this.isReauth) {
-                            this.$store.commit('SET_REAUTHENTICATION_TOKEN', token)
-                            this.$router.push({name: 'HOME'})
-                        }
-                        else {
-                            this.$router.push({name: 'HOME'})
-                        }
+                        this.roleInput = ''
+                        this.roleInfo = '' + data.roleId + ' - ' + data.roleName
                     }
-                    else {
-                        setTimeout(() => { // что бы не спамилоли твари
-                            this.isDisabledButton = false
-                        }, 500);
-                    }
+                    
+                    this.isDisabledButton = false
                 })
             }
         }
     },
     mounted() {
-        if (this.$store.getters.IS_AUTHENTICATE) {
-            this.$router.push({name: 'HOME'})
-        }
+        // if (!this.$store.getters.IS_AUTHENTICATE) {
+        //     this.$router.push({name: 'LOGIN'})
+        // }
     }
 }
 </script>

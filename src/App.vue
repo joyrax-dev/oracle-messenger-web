@@ -4,6 +4,7 @@
         <router-link to="/login">Login</router-link> |
         <span @click="logout">Logout</span> |
         <router-link to="/register">Register</router-link> |
+        <router-link to="/role">Role</router-link> |
         <router-link to="/about">About</router-link>
     </div>
     <router-view/>
@@ -38,21 +39,19 @@ export default {
             socket.connect()
         }
 
-        if (this.$store.getters.IS_REAUTHENTICATE && !this.$store.getters.IS_AUTHENTICATE) {
-            socket.emit('checkReauthToken', this.$store.getters.GET_AUTHENTICATION_USER, this.$store.getters.GET_REAUTHENTICATION_TOKEN, (msg, status) => {
-                if (status === true) {
-                    socket.emit('loginWithToken', this.$store.getters.GET_AUTHENTICATION_USER, this.$store.getters.GET_REAUTHENTICATION_TOKEN, (userId, msg, status) => {
-                        if (status === true) {
-                            this.$store.commit('SET_AUTHENTICATE', true)
-                            this.$store.commit('SET_AUTHENTICATION_USER', userId)
+        if (this.$store.getters.IS_REAUTHENTICATE) {
+            socket.emit('reLogin', {
+                userId: this.$store.getters.GET_AUTHENTICATION_USER,
+                token: this.$store.getters.GET_REAUTHENTICATION_TOKEN,
+                userAgent: navigator.userAgent,
+                isNextReLogin: true
+            }, (data, code, status) => {
+                const { userId, token, isNextReLogin } = data
 
-                            socket.emit('newReauthToken', this.$store.getters.GET_AUTHENTICATION_USER, (token, msg, status) => {
-                                if (status === true) {
-                                    this.$store.commit('SET_REAUTHENTICATION_TOKEN', token)
-                                }
-                            })
-                        }
-                    })
+                if (status === true) {
+                    this.$store.commit('SET_AUTHENTICATE', true)
+                    this.$store.commit('SET_AUTHENTICATION_USER', userId)
+                    this.$store.commit('SET_REAUTHENTICATION_TOKEN', token)
                 }
             })
         }
