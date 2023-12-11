@@ -50,9 +50,9 @@ export default {
         }
     },
     mounted() {
-        // if (!this.$store.getters.IS_AUTHENTICATE) {
-        //     this.$router.push({name: 'LOGIN'})
-        // }
+        if (!this.$store.getters.IS_AUTHENTICATE) {
+            this.$router.push({name: 'LOGIN'})
+        }
     }
 }
 </script>
