@@ -5,6 +5,7 @@
         <span @click="logout">Logout</span> |
         <router-link to="/register">Register</router-link> |
         <router-link to="/role">Role</router-link> |
+        <router-link to="/chat">Chat</router-link> |
         <router-link to="/about">About</router-link>
     </div>
     <router-view/>

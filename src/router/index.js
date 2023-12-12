@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import RoleView from '@/views/RoleView.vue'
 import AboutView from '@/views/AboutView.vue'
+import ChatView from '@/views/ChatView.vue'
 
 const routes = [
     {
@@ -25,6 +26,16 @@ const routes = [
         path: '/role',
         name: 'ROLE',
         component: RoleView
+    },
+    {
+        path: '/chat/:chatId',
+        name: 'CHATID',
+        component: ChatView
+    },
+    {
+        path: '/chat',
+        name: 'CHAT',
+        component: ChatView
     },
     {
         path: '/about',
