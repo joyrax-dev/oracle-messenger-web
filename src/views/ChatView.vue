@@ -20,8 +20,8 @@
             </div>
         </div>
             <div class="mt-4">
-                <input type="text" class="border rounded p-2 w-full" placeholder="Введите сообщение">
-                <button class="bg-blue-500 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded mt-2">Отправить</button>
+                <input type="text" v-model="messageInput" class="border rounded p-2 w-full" placeholder="Введите сообщение">
+                <button v-bind:disabled="isDisabledSendButton" @click="sendMessage" class="bg-blue-500 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded mt-2">Отправить</button>
             </div>
         </div>
     </div>
@@ -36,7 +36,9 @@ export default {
         return {
             chatList: [],
             chatsMessages: [],
-            currentChat: 0
+            currentChat: 0,
+            messageInput: '',
+            isDisabledSendButton: false
         }
     },
     watch: {
@@ -79,6 +81,33 @@ export default {
             }, (code, status) => {
                 console.log(code)
             })
+        },
+        sendMessage() {
+            if (this.isDisabledSendButton) return
+            this.isDisabledSendButton = true
+
+            if (!socket.connected) return
+            if (!this.$store.getters.IS_AUTHENTICATE) return
+            if (this.messageInput.trim() === '') return
+            if (this.currentChat === 0) return
+
+            socket.emit('sendMessage', {
+                chatId: this.currentChat,
+                userId: this.$store.getters.GET_AUTHENTICATION_USER,
+                text: this.messageInput
+            }, (data, code, status) => {
+                if (status === true) {
+                    const { message, chatId } = data
+                    this.messageInput = ''
+                    console.log('sendMessage: ', code)
+                    this.newMessage(chatId, message)
+                }
+            })
+        },
+        newMessage(chatId, message) {
+            if (!this.$store.getters.IS_AUTHENTICATE) return
+
+            this.chatsMessages[chatId].push(message)
         }
     },
     mounted() {
@@ -88,6 +117,13 @@ export default {
 
         socket.on('chatSetMessages', (chatId, messages) => {
             this.chatsMessages[chatId] = messages
+        })
+
+        socket.on('newMessage', (chatId, message) => {
+            if (this.chatsMessages.indexOf(chatId) !== -1) {
+                console.log('trueeee')
+                this.newMessage(chatId, message)
+            }
         })
     },
     created() {
