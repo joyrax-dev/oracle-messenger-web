@@ -1,5 +1,5 @@
 <template>
-    <div class="flex">
+    <div class="flex h-full">
         <div class="w-1/4 bg-gray-200 p-4">
             <h1 class="flex justify-between text-lg font-bold mb-4">
                 <span>Список чатов</span>
@@ -12,14 +12,16 @@
                 </li>
             </ul>
         </div>
-        <div class="w-3/4 bg-gray-100 p-4">
-        <h1 class="text-lg font-bold mb-4">Чат</h1>
-        <div class="border rounded p-2 h-64 overflow-y-scroll">
-            <div class="mb-2" v-for="item in GET_CHAT_MESSAGES">
-                <strong>{{ item.senderId }}:</strong> {{ item.text }}
+        <div class="flex flex-col w-3/4 bg-gray-100 p-4">
+            <h1 class="flex-none text-lg font-bold mb-4">Чат</h1>
+            <div class="flex-auto flex flex-col-reverse border rounded p-2 h-64 overflow-y-scroll">
+                <div class="items-center flex mb-2" v-for="item in GET_CHAT_MESSAGES">
+                    <strong class="pr-4 w-auto">{{ item.senderId }}: </strong> 
+                    <span class="w-full">{{ item.text }} </span>
+                    <div class="text-xs text-center pl-4 w-auto">{{ formatTime(new Date(item.updatedAt)) }}</div>
+                </div>
             </div>
-        </div>
-            <div class="mt-4">
+            <div class="flex-none mt-4">
                 <input type="text" v-model="messageInput" class="border rounded p-2 w-full" placeholder="Введите сообщение">
                 <button v-bind:disabled="isDisabledSendButton" @click="sendMessage" class="bg-blue-500 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded mt-2">Отправить</button>
             </div>
@@ -29,6 +31,7 @@
   
 <script>
 import socket from '@/socket'
+import * as moment from 'moment'
 
 export default {
     name: 'ChatView',
@@ -50,10 +53,14 @@ export default {
             return this.$store.getters.GET_CHATS
         },
         GET_CHAT_MESSAGES() {
-            return this.$store.getters.GET_CHAT_MESSAGES(this.currentChat)
+            const messages = this.$store.getters.GET_CHAT_MESSAGES(this.currentChat)
+            return messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         }
     },
     methods: {
+        formatTime(time) {
+            return moment(time).format('hh:mm')
+        },
         loadAllChats() {
             if (!this.$store.getters.IS_AUTHENTICATE) return
 
@@ -113,6 +120,10 @@ export default {
         },
         newMessageHandler(data) {
             this.$store.commit('ADD_MESSAGE', data.message)
+            
+        },
+        chatSetMessagesHandler(chatId, messages) {
+            this.$store.commit('REPLACE_CHAT_MESSAGES', { chatId, messages })
         }
     },
     mounted() {
@@ -122,13 +133,11 @@ export default {
 
         this.loadAllChats()
 
-        socket.on('chatSetMessages', (chatId, messages) => {
-            this.$store.commit('REPLACE_CHAT_MESSAGES', { chatId, messages })
-        })
-
+        socket.on('chatSetMessages', this.chatSetMessagesHandler)
         socket.on('newMessage', this.newMessageHandler)
     },
     unmounted() {
+        socket.off('chatSetMessages', this.chatSetMessagesHandler)
         socket.off('newMessage', this.newMessageHandler)
     }
 }

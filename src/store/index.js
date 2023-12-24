@@ -3,6 +3,7 @@ import { createStore } from 'vuex'
 import socket from '@/socket'
 import chats from './chats'
 import messages from './messages'
+import users from './users'
 
 export default createStore({
     state: {
@@ -26,7 +27,8 @@ export default createStore({
     },
     modules: {
         chats,
-        messages
+        messages,
+        users
     },
     plugins: [createPersistedState({
         paths: ['reauthentication_token', 'authentication_user'],
