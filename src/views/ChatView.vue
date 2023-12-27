@@ -16,7 +16,7 @@
             <h1 class="flex-none text-lg font-bold mb-4">Чат</h1>
             <div class="flex-auto flex flex-col-reverse border rounded p-2 h-64 overflow-y-scroll">
                 <div class="items-center flex mb-2" v-for="item in GET_CHAT_MESSAGES">
-                    <strong class="pr-4 w-auto">{{ item.senderId }}: </strong> 
+                    <strong class="pr-4 w-auto">{{ getUser(item.senderId).login }}: </strong> 
                     <span class="w-full">{{ item.text }} </span>
                     <div class="text-xs text-center pl-4 w-auto">{{ formatTime(new Date(item.updatedAt)) }}</div>
                 </div>
@@ -61,6 +61,16 @@ export default {
         formatTime(time) {
             return moment(time).format('hh:mm')
         },
+        getUser(id) {
+            const user = this.$store.getters.GET_USER(id)
+
+            try {
+                return user.user
+            }
+            catch {
+                return id
+            }
+        },
         loadAllChats() {
             if (!this.$store.getters.IS_AUTHENTICATE) return
 
@@ -94,7 +104,10 @@ export default {
             socket.emit('joinChat', {
                 userId: this.$store.getters.GET_AUTHENTICATION_USER,
                 chatId
-            }, (code, status) => console.log('joined: ', chatId))
+            }, (code, status) => {
+                console.log('joined: ', chatId)
+                this.loadChatUsers(chatId)
+            })
         },
         sendMessage() {
             if (this.isDisabledSendButton) return
@@ -124,6 +137,60 @@ export default {
         },
         chatSetMessagesHandler(chatId, messages) {
             this.$store.commit('REPLACE_CHAT_MESSAGES', { chatId, messages })
+        },
+
+        loadChatUsers(chatId) {
+            if (!this.$store.getters.IS_AUTHENTICATE) return
+
+            socket.emit('getChatUsers', {
+                chatId,
+                senderId: this.$store.getters.GET_AUTHENTICATION_USER,
+            }, (data, code, status) => {
+                if (status === true) {
+                    const { usersIds } = data
+                    
+                    for (const userId of usersIds) {
+                        this.$store.commit('ADD_USER', { id: userId })
+                        this.syncUser(userId)
+                    }
+                }
+            })
+        },
+        syncUser(id) {
+            if (!this.$store.getters.IS_AUTHENTICATE) return
+
+            socket.emit('getUserInfo', {
+                senderId: this.$store.getters.GET_AUTHENTICATION_USER,
+                targetId: id
+            }, (data, code, status) => {
+                if (status === true) {
+                    const { user } = data
+
+                    this.$store.commit('UPDATE_USER', user)
+                    console.log(user)
+                }
+            })
+        },
+        syncUsers() {
+            if (!this.$store.getters.IS_AUTHENTICATE) return
+
+            const users = this.$store.getters.GET_USERS
+            const data = []
+
+            for (const user of users) {
+                data.push({
+                    senderId: this.$store.getters.GET_AUTHENTICATION_USER,
+                    targetId: user.id
+                })
+            }
+
+            socket.emit('getUsersInfo', data, (data, code, status) => {
+                if (status === true) {
+                    for (const user of data) {
+                        this.$store.commit('UPDATE_USER', user)
+                    }
+                }
+            })
         }
     },
     mounted() {
