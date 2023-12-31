@@ -3,7 +3,7 @@
         <div class="w-1/4 bg-gray-200 p-4">
             <h1 class="flex justify-between text-lg font-bold mb-4">
                 <span>Список чатов</span>
-                <span @click="log" class="inline-block text-xl px-2">+</span>
+                <span class="inline-block text-xl px-2">+</span>
             </h1>
             <ul>
                 <li v-for="item in GET_CHATS" @click="$router.push({ name: 'CHATID', params: { chatId: item.id }})" class="mb-2 p-1 rounded-md border-2 border-blue-500 hover:border-indigo-500 text-gray-900">
@@ -41,7 +41,8 @@ export default {
             currentChat: 0,
             messageInput: '',
             isDisabledSendButton: false,
-            chatEl: null
+            chatEl: null,
+            limitLoadMsg: 30
         }
     },
     watch: {
@@ -71,12 +72,17 @@ export default {
                 socket.emit('loadMessages', {
                     senderId: this.$store.getters.GET_AUTHENTICATION_USER,
                     chatId: this.currentChat,
-                    limit: 30,
+                    limit: this.limitLoadMsg,
                     offset: this.$store.getters.GET_CHAT_MESSAGES(this.currentChat).length
                 }, (data, code, status) => {
                     if (status === true) {
                         const { chatId, messages } = data
                         
+                        if (messages.length < this.limitLoadMsg) {
+                            // добавить блокировку последущее обращение к серверу за сообщениями
+                            // потому что если меньше лимита то значит больше сообщений нету
+                        }
+
                         for(const message of messages) {
                             this.$store.commit('ADD_MESSAGE', message)
                         }
@@ -86,9 +92,6 @@ export default {
         },
         formatTime(time) {
             return moment(time).format('hh:mm')
-        },
-        log() {
-            console.log(this.GET_CHAT_MESSAGES)
         },
         getUser(id) {
             const user = this.$store.getters.GET_USER(id)

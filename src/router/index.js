@@ -5,6 +5,7 @@ import RegisterView from '@/views/RegisterView.vue'
 import RoleView from '@/views/RoleView.vue'
 import AboutView from '@/views/AboutView.vue'
 import ChatView from '@/views/ChatView.vue'
+import Dashboard from '@/views/Admin/Dashboard.vue'
 
 const routes = [
     {
@@ -41,6 +42,15 @@ const routes = [
         path: '/about',
         name: 'ABOUT',
         component: AboutView
+    },
+    {
+        path: '/admin',
+        children: [
+            {
+                path: '',
+                component: Dashboard
+            }
+        ]
     }
 ]
 
