@@ -3,7 +3,7 @@
         <div class="w-1/4 bg-gray-200 p-4">
             <h1 class="flex justify-between text-lg font-bold mb-4">
                 <span>Список чатов</span>
-                <span class="inline-block text-xl px-2">+</span>
+                <span @click="log" class="inline-block text-xl px-2">+</span>
             </h1>
             <ul>
                 <li v-for="item in GET_CHATS" @click="$router.push({ name: 'CHATID', params: { chatId: item.id }})" class="mb-2 p-1 rounded-md border-2 border-blue-500 hover:border-indigo-500 text-gray-900">
@@ -14,9 +14,10 @@
         </div>
         <div class="flex flex-col w-3/4 bg-gray-100 p-4">
             <h1 class="flex-none text-lg font-bold mb-4">Чат</h1>
-            <div class="flex-auto flex flex-col-reverse border rounded p-2 h-64 overflow-y-scroll">
+            <div id="chatEl" @scroll="scrollHandle" class="flex-auto flex flex-col-reverse border rounded p-2 h-64 overflow-y-scroll">
                 <div class="items-center flex mb-2" v-for="item in GET_CHAT_MESSAGES">
-                    <strong class="pr-4 w-auto">{{ getUser(item.senderId).login }}: </strong> 
+                    <!-- {{ console.log(item) }} -->
+                    <strong class="pr-4 w-auto">{{ getUser(item.senderId) ? getUser(item.senderId).login : item.senderId  }}: </strong> 
                     <span class="w-full">{{ item.text }} </span>
                     <div class="text-xs text-center pl-4 w-auto">{{ formatTime(new Date(item.updatedAt)) }}</div>
                 </div>
@@ -39,7 +40,8 @@ export default {
         return {
             currentChat: 0,
             messageInput: '',
-            isDisabledSendButton: false
+            isDisabledSendButton: false,
+            chatEl: null
         }
     },
     watch: {
@@ -58,11 +60,40 @@ export default {
         }
     },
     methods: {
+        scrollHandle() {
+            if (!this.chatEl) return
+
+            const { scrollTop, scrollHeight, clientHeight } = this.chatEl
+
+            const absTop = Math.abs(scrollTop)
+
+            if (clientHeight + absTop >= scrollHeight) {
+                socket.emit('loadMessages', {
+                    senderId: this.$store.getters.GET_AUTHENTICATION_USER,
+                    chatId: this.currentChat,
+                    limit: 30,
+                    offset: this.$store.getters.GET_CHAT_MESSAGES(this.currentChat).length
+                }, (data, code, status) => {
+                    if (status === true) {
+                        const { chatId, messages } = data
+                        
+                        for(const message of messages) {
+                            this.$store.commit('ADD_MESSAGE', message)
+                        }
+                    }
+                })
+            }
+        },
         formatTime(time) {
             return moment(time).format('hh:mm')
         },
+        log() {
+            console.log(this.GET_CHAT_MESSAGES)
+        },
         getUser(id) {
             const user = this.$store.getters.GET_USER(id)
+            
+            if (!user) return null
 
             try {
                 return user.user
@@ -167,7 +198,6 @@ export default {
                     const { user } = data
 
                     this.$store.commit('UPDATE_USER', user)
-                    console.log(user)
                 }
             })
         },
@@ -202,10 +232,14 @@ export default {
 
         socket.on('chatSetMessages', this.chatSetMessagesHandler)
         socket.on('newMessage', this.newMessageHandler)
+
+        this.chatEl = document.getElementById('chatEl')
     },
     unmounted() {
         socket.off('chatSetMessages', this.chatSetMessagesHandler)
         socket.off('newMessage', this.newMessageHandler)
+
+        this.chatEl = null
     }
 }
 </script>
